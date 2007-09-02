@@ -1,34 +1,30 @@
-SWFUpload module
-         
-DESCRIPTION:
-********************************************************************
+SWFUpload Module
+================================================================================
 
+Description
+--------------------------------------------------------------------------------
 This module replaces the upload form with the SWFUpload interface as seen on
-http://swfupload.mammon.se and handles the upload through javascript/flash. 
+http://swfupload.mammon.se and handles the upload through JavaScript/Flash. 
 It depends on the core upload module and degrades gracefully to a normal HTML 
-upload form if flash or javascript is unavailable.
+upload form if Flash or JavaScript are unavailable.
 
 
-INSTALLATION:
-********************************************************************
+Installation
+--------------------------------------------------------------------------------
+1. Place the entire swfupload directory into your Drupal modules directory
 
+2. Download the SWFUpload library from http://swfupload.mammon.se
 
-1. Place the entire swfupload directory into your Drupal modules/
-   directory.
-
-   
-2. Download SWFUpload from
-
-   http://swfupload.mammon.se
-
-   Remember to uncompress the file and make sure the folder is named
-   'swfupload'.
-
-   
-3. Place the entire 'swfupload' engine folder inside your modules/swfupload
-   directory. So the SWFUpload engine will live in modules/swfupload/swfupload
-
+3. Extract the SWFUpload library to the 'swfupload' folder inside your
+   modules/swfupload directory. The end result will read:
+     modules/swfupload/swfupload/README.txt
+     modules/swfupload/swfupload/SWFUpload.js
+     modules/swfupload/swfupload/SWFUpload.swf
    
 4. Enable this module by navigating to:
-
      administer > site building > modules
+
+
+Credits
+--------------------------------------------------------------------------------
+* Originally created by riemann.

@@ -1,4 +1,4 @@
-
+// $id$
 function fileQueued(file, queuelength) {
 	var listingfiles = document.getElementById("SWFUploadFileListingFiles");
 

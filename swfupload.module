@@ -1,4 +1,5 @@
 <?php
+/* $Id$ */
 
 /**
  * Implementation of hook_menu().
@@ -23,7 +24,6 @@ function swfupload_menu($may_cache) {
 }
 
 function _swfupload_user_access($key) {
-  
   /*
   THIS IS A BIG SECURITY HOLE - PLEASE HELP FIXING IT
   the code below should work, but for some reason arg(1) contains all kind of different values but not the sid which 
@@ -46,7 +46,6 @@ function _swfupload_user_access($key) {
 }
 
 function _swfupload_swfupload() {
-  
   // Load drupal session and get session vars
   
   $session_id = arg(1);
@@ -111,7 +110,6 @@ function _swfupload_swfupload() {
  * Implementation of hook_form_alter().
  */
 function swfupload_form_alter($form_id, &$form) {
-
   if ($form_id == 'node_type_form' && isset($form['identity']['type'])) {
     $form['workflow']['upload'] = array(
       '#type' => 'radios',
@@ -274,7 +272,6 @@ function _swfupload_form($node) {
 }
 
 function _swfupload_interface() {
- 
   $interface = '
   <div id="SWFUploadTarget">
   <input name="files[upload]" class="form-file" id="edit-upload" size="40" type="file">
