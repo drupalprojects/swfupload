@@ -185,7 +185,7 @@ function _swfupload_get_js() {
     function start_swfupload() {
       // Max settings
       swfu = new SWFUpload({
-        upload_script : "'.base_path().'flash_upload/'.session_id().'/'.$user->uid.'",
+        upload_script : "'. url('flash_upload/'. session_id() .'/'. $user->uid) .'",
         target : "SWFUploadTarget",
         flash_path : "'. base_path() . $path .'/swfupload/SWFUpload.swf",
         allowed_filesize : 99720,    // 30 MB
