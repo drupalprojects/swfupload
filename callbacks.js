@@ -45,25 +45,24 @@ function uploadFileStart(file, position, queuelength) {
 }
 
 function uploadProgress(file, bytesLoaded) {
-
 	var progress = document.getElementById(file.id + "progress");
-	var percent = Math.ceil((bytesLoaded / file.size) * 200)
-	progress.style.background = "#f0f0f0 url(/modules/swfupload/images/progressbar.png) no-repeat -" + (200 - percent) + "px 0";
+	var percent = Math.ceil((bytesLoaded / file.size) * 200);
+  progress.style.background = "#f0f0f0 url(" + progressbarimage + ") no-repeat -" + (200 - percent) + "px 0";
 }
 
 function uploadError(errno) {
-	// SWFUpload.debug(errno);
+  // SWFUpload.debug(errno);
 }
 
 function uploadFileComplete(file) {
-	var li = document.getElementById(file.id);
-	li.className = "SWFUploadFileItem uploadCompleted";
+  var li = document.getElementById(file.id);
+  li.className = "SWFUploadFileItem uploadCompleted";
 }
 
 function cancelQueue() {
-	swfu.cancelQueue();
-	document.getElementById(swfu.movieName + "UploadBtn").style.display = "none";
-	document.getElementById("cancelqueuebtn").style.display = "none";
+  swfu.cancelQueue();
+  document.getElementById(swfu.movieName + "UploadBtn").style.display = "none";
+  document.getElementById("cancelqueuebtn").style.display = "none";
 }
 
 function clearQueue() {
@@ -85,8 +84,8 @@ function clearQueue() {
 }
 
 function uploadQueueComplete(file) {
-	var div = document.getElementById("queueinfo");
-	div.innerHTML = "All files uploaded..."
-	document.getElementById("cancelqueuebtn").style.display = "none";
+  var div = document.getElementById("queueinfo");
+  div.innerHTML = "All files uploaded..."
+  document.getElementById("cancelqueuebtn").style.display = "none";
 }
 

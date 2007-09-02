@@ -175,45 +175,44 @@ function _swfupload_get_js() {
   $path = drupal_get_path('module', 'swfupload');
 
   $js = '
-  <script type="text/javascript" src="/'.$path.'/swfupload/SWFUpload.js"></script>
-  <script type="text/javascript" src="/'.$path.'/callbacks.js"></script>
+  <script type="text/javascript" src="'. base_path() . $path .'/swfupload/SWFUpload.js"></script>
+  <script type="text/javascript" src="'. base_path() . $path .'/callbacks.js"></script>
   <script type="text/javascript">
-        var swfu;
-        var swfu2;
-
-        function start_swfupload() {
-
-            // Max settings
-            swfu = new SWFUpload({
-                upload_script : "'.base_path().'flash_upload/'.session_id().'/'.$user->uid.'",
-                target : "SWFUploadTarget",
-                flash_path : "/'.$path.'/swfupload/SWFUpload.swf",
-                allowed_filesize : 99720,    // 30 MB
-                allowed_filetypes : "*.*",
-                allowed_filetypes_description : "'. t('All files...') . '",
-                browse_link_innerhtml : "'. t('Browse') . '",
-                upload_link_innerhtml : "'. t('Upload queue') . '",
-                browse_link_class : "swfuploadbtn browsebtn",
-                upload_link_class : "swfuploadbtn uploadbtn",
-                flash_loaded_callback : \'swfu.flashLoaded\',
-                upload_file_queued_callback : "fileQueued",
-                upload_file_start_callback : \'uploadFileStart\',
-                upload_progress_callback : \'uploadProgress\',
-                upload_file_complete_callback : \'uploadFileComplete\',
-                upload_file_cancel_callback : \'uploadFileCancelled\',
-                upload_queue_complete_callback : \'uploadQueueComplete\',
-                upload_error_callback : \'uploadError\',
-                upload_cancel_callback : \'uploadCancel\',
-                auto_upload : false,
-                debug : false,
-                create_ui : true    // <-- added this line if using IE7 only
-
-           });
-
-           swfu.loadUI(); // <-- added this line if using IE7 only
-        };
-
-        window.onload = start_swfupload;
+    var swfu;
+    var swfu2;
+    var progressbarimage = "'. base_path() . $path .'/images/progressbar.png";
+    
+    function start_swfupload() {
+      // Max settings
+      swfu = new SWFUpload({
+        upload_script : "'.base_path().'flash_upload/'.session_id().'/'.$user->uid.'",
+        target : "SWFUploadTarget",
+        flash_path : "'. base_path() . $path .'/swfupload/SWFUpload.swf",
+        allowed_filesize : 99720,    // 30 MB
+        allowed_filetypes : "*.*",
+        allowed_filetypes_description : "'. t('All files...') . '",
+        browse_link_innerhtml : "'. t('Browse') . '",
+        upload_link_innerhtml : "'. t('Upload queue') . '",
+        browse_link_class : "swfuploadbtn browsebtn",
+        upload_link_class : "swfuploadbtn uploadbtn",
+        flash_loaded_callback : \'swfu.flashLoaded\',
+        upload_file_queued_callback : "fileQueued",
+        upload_file_start_callback : \'uploadFileStart\',
+        upload_progress_callback : \'uploadProgress\',
+        upload_file_complete_callback : \'uploadFileComplete\',
+        upload_file_cancel_callback : \'uploadFileCancelled\',
+        upload_queue_complete_callback : \'uploadQueueComplete\',
+        upload_error_callback : \'uploadError\',
+        upload_cancel_callback : \'uploadCancel\',
+        auto_upload : false,
+        debug : false,
+        create_ui : true    // <-- added this line if using IE7 only
+      });
+      
+      swfu.loadUI(); // <-- added this line if using IE7 only
+    };
+    
+    window.onload = start_swfupload;
   </script>';
   
   return $js;
