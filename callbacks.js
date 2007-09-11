@@ -48,6 +48,7 @@ function uploadProgress(file, bytesLoaded) {
 	var progress = document.getElementById(file.id + "progress");
 	var percent = Math.ceil((bytesLoaded / file.size) * 200);
   progress.style.background = "#f0f0f0 url(" + progressbarimage + ") no-repeat -" + (200 - percent) + "px 0";
+  progress.innerHTML = bytesLoaded + " / " + file.size + " bytes";
 }
 
 function uploadError(errno) {
