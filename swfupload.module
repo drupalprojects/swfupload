@@ -19,6 +19,13 @@ function swfupload_requirements($phase) {
   return $requirements;
 }
 
+function swfupload_generate($callback = 'swfupload_default') {
+  _swfupload_add_js($callback);
+  $path = drupal_get_path('module', 'swfupload');
+  drupal_add_css($path .'/swfupload.css');
+  return _swfupload_interface($callback);
+}
+
 /**
  * Implementation of hook_menu().
  */
@@ -34,7 +41,7 @@ function swfupload_menu($may_cache) {
     );
     $items[] = array('path' => 'flash_upload',
       'callback' => '_swfupload_swfupload',
-      'access' => _swfupload_user_access(arg(1)),
+      'access' => _swfupload_user_access(arg(2)),
       'type' => MENU_CALLBACK
     );    
   }
@@ -65,8 +72,8 @@ function _swfupload_user_access($key) {
 
 function _swfupload_swfupload() {
   // Load drupal session and get session vars
-  
-  $session_id = arg(1);
+  $callback = arg(1);
+  $session_id = arg(2);
   session_id($session_id);
   session_decode(sess_read($session_id));
 
@@ -118,6 +125,10 @@ function _swfupload_swfupload() {
     // Store the uploaded fid for this page request in case of submit without
     // preview or attach. See earlier notes.
     $_SESSION['file_current_upload'] = $key;
+    
+    if (function_exists($callback)) {
+      call_user_func_array($callback, array('file', $file));
+    }
   }
   
   // write to drupal session 
@@ -186,7 +197,7 @@ function swfupload_form_alter($form_id, &$form) {
   }
 }
 
-function _swfupload_add_js() {  
+function _swfupload_add_js($callback = 'swfupload_default') {
   global $user;
   $path = drupal_get_path('module', 'swfupload');
   drupal_add_js($path .'/swfupload/SWFUpload.js');
@@ -198,7 +209,7 @@ function _swfupload_add_js() {
     function start_swfupload() {
       // Max settings
       swfu = new SWFUpload({
-        upload_script : "'. url('flash_upload/'. session_id() .'/'. $user->uid) .'",
+        upload_script : "'. url('flash_upload/'. $callback .'/'. session_id() .'/'. $user->uid) .'",
         target : "SWFUploadTarget",
         flash_path : "'. base_path() . $path .'/swfupload/SWFUpload.swf",
         allowed_filesize : 99720,    // 30 MB
@@ -209,14 +220,14 @@ function _swfupload_add_js() {
         browse_link_class : "swfuploadbtn browsebtn",
         upload_link_class : "swfuploadbtn uploadbtn",
         flash_loaded_callback : \'swfu.flashLoaded\',
-        upload_file_queued_callback : "fileQueued",
-        upload_file_start_callback : \'uploadFileStart\',
-        upload_progress_callback : \'uploadProgress\',
-        upload_file_complete_callback : \'uploadFileComplete\',
-        upload_file_cancel_callback : \'uploadFileCancelled\',
+        upload_file_queued_callback : "swfupload_fileQueued",
+        upload_file_start_callback : \'swfupload_uploadFileStart\',
+        upload_progress_callback : \'swfupload_uploadProgress\',
+        upload_file_complete_callback : \'swfupload_uploadFileComplete\',
+        upload_file_cancel_callback : \'swfupload_uploadFileCancelled\',
         upload_queue_complete_callback : \'uploadQueueComplete\',
-        upload_error_callback : \'uploadError\',
-        upload_cancel_callback : \'uploadCancel\',
+        upload_error_callback : \'swfupload_uploadError\',
+        upload_cancel_callback : \'swfupload_uploadCancel\',
         auto_upload : false,
         debug : false,
         create_ui : $.browser.msie // <-- added this line if using IE7 only
@@ -279,17 +290,13 @@ function _swfupload_form($node) {
   return $form;
 }
 
-function _swfupload_interface() {
-  $interface = '
-  <div id="SWFUploadTarget">
-  <input name="files[upload]" class="form-file" id="edit-upload" size="40" type="file">
+function _swfupload_interface($callback = 'swfupload_default') {
+  $interface = '<div id="SWFUploadTarget">
+  <input name="files[upload]" class="form-file" id="edit-upload" size="40" type="file" />
   </div>
-
   <h4 id="queueinfo">'. t('Queue is empty') . '</h4>
   <div id="SWFUploadFileListingFiles"></div>
-  <br class="clr">
-  <a class="swfuploadbtn" id="cancelqueuebtn" href="javascript:cancelQueue();">'. t('Cancel queue') . '</a>'; 
-
+  <a class="swfuploadbtn" id="cancelqueuebtn" href="javascript:swfupload_cancelQueue();">'. t('Cancel queue') . '</a>';
   return $interface;
 }
 
@@ -315,7 +322,7 @@ function swfupload_js() {
   $form = form_builder('swfupload_js', $form);
   $output = theme('status_messages') . drupal_render($form);
   
-  $output .= '<script type="text/javascript">clearQueue();</script>';
+  $output .= '<script type="text/javascript">swfupload_clearQueue();</script>';
 
   // We send the updated file attachments form.
   print drupal_to_js(array('status' => TRUE, 'data' => $output));

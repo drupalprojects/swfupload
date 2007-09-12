@@ -1,5 +1,5 @@
 // $Id$
-function fileQueued(file, queuelength) {
+function swfupload_fileQueued(file, queuelength) {
 	var listingfiles = document.getElementById("SWFUploadFileListingFiles");
 
 	if(!listingfiles.getElementsByTagName("ul")[0]) {
@@ -28,7 +28,7 @@ function fileQueued(file, queuelength) {
 	document.getElementById("cancelqueuebtn").style.display = "block";	
 }
 
-function uploadFileCancelled(file, queuelength) {
+function swfupload_uploadFileCancelled(file, queuelength) {
 	var li = document.getElementById(file.id);
 	li.innerHTML = file.name + " - cancelled";
 	li.className = "SWFUploadFileItem uploadCancelled";
@@ -36,7 +36,7 @@ function uploadFileCancelled(file, queuelength) {
 	queueinfo.innerHTML = queuelength + " files queued";
 }
 
-function uploadFileStart(file, position, queuelength) {
+function swfupload_uploadFileStart(file, position, queuelength) {
 	var div = document.getElementById("queueinfo");
 	div.innerHTML = "Uploading file " + position + " of " + queuelength;
 
@@ -44,30 +44,30 @@ function uploadFileStart(file, position, queuelength) {
 	li.className += " fileUploading";
 }
 
-function uploadProgress(file, bytesLoaded) {
+function swfupload_uploadProgress(file, bytesLoaded) {
 	var progress = document.getElementById(file.id + "progress");
 	var percent = Math.ceil((bytesLoaded / file.size) * 200);
   progress.style.background = "#f0f0f0 url(" + progressbarimage + ") no-repeat -" + (200 - percent) + "px 0";
   progress.innerHTML = bytesLoaded + " / " + file.size + " bytes";
 }
 
-function uploadError(errno) {
+function swfupload_uploadError(errno) {
   // SWFUpload.debug(errno);
 }
 
-function uploadFileComplete(file) {
+function swfupload_uploadFileComplete(file) {
   var li = document.getElementById(file.id);
   li.className = "SWFUploadFileItem uploadCompleted";
 }
 
-function cancelQueue() {
+function swfupload_cancelQueue() {
   swfu.cancelQueue();
   document.getElementById(swfu.movieName + "UploadBtn").style.display = "none";
   document.getElementById("cancelqueuebtn").style.display = "none";
+  swfupload_clearQueue();
 }
 
-function clearQueue() {
-    
+function swfupload_clearQueue() {    
     // reset the queuelength
     swfu.cancelQueue();
     
