@@ -1,6 +1,24 @@
 <?php
 // $Id$
 
+/*
+ * Implementation of hook_requirements().
+ */
+function swfupload_requirements($phase) {
+  $t = get_t();
+  $requirements = array('swfupload' => array('title' => $t('SWFUpload')));
+  $path = drupal_get_path('module', 'swfupload') .'/swfupload';
+  if (!file_exists($path .'/swfupload.swf') || !file_exists($path .'/swfupload.js')) { 
+    $requirements['swfupload']['value'] = $t('Missing files');
+    $requirements['swfupload']['description'] = $t('You must install the minimalistic <a href="@swfupload">SWFUpload</a> library to %swfuploadpath.', array('@swfupload' => 'http://swfupload.mammon.se', '%swfuploadpath' => $path));
+    $requirements['swfupload']['severity'] = REQUIREMENT_ERROR; 
+  }
+  else {
+    $requirements['swfupload']['value'] = 'Installed';
+  }
+  return $requirements;
+}
+
 /**
  * Implementation of hook_menu().
  */
