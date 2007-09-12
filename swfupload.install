@@ -7,3 +7,12 @@
 function swfupload_install() {
   db_query("UPDATE {system} SET weight='10' WHERE name='swfupload' AND type='module'");
 }
+
+/**
+ * Update hook for SWFUpload to set the weight of the module
+ */ 
+function swfupload_update_1() {
+  $items = array();
+  $items[] = update_sql("UPDATE {system} SET weight='10' WHERE name='swfupload' AND type='module'");
+  return $items;
+}

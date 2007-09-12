@@ -168,18 +168,15 @@ function swfupload_form_alter($form_id, &$form) {
   }
 }
 
-function _swfupload_get_js() {  
+function _swfupload_add_js() {  
   global $user;
   $path = drupal_get_path('module', 'swfupload');
-
-  $js = '
-  <script type="text/javascript" src="'. base_path() . $path .'/swfupload/SWFUpload.js"></script>
-  <script type="text/javascript" src="'. base_path() . $path .'/callbacks.js"></script>
-  <script type="text/javascript">
+  drupal_add_js($path .'/swfupload/SWFUpload.js');
+  drupal_add_js($path .'/callbacks.js');
+  drupal_add_js('
     var swfu;
     var swfu2;
-    var progressbarimage = "'. base_path() . $path .'/images/progressbar.png";
-    
+    var progressbarimage = "'. base_path() . $path .'/images/progressbar.png";    
     function start_swfupload() {
       // Max settings
       swfu = new SWFUpload({
@@ -204,28 +201,21 @@ function _swfupload_get_js() {
         upload_cancel_callback : \'uploadCancel\',
         auto_upload : false,
         debug : false,
-        create_ui : true    // <-- added this line if using IE7 only
+        create_ui : $.browser.msie // <-- added this line if using IE7 only
       });
-      
-      swfu.loadUI(); // <-- added this line if using IE7 only
+      if ($.browser.msie) {
+        swfu.loadUI(); // <-- added this line if using IE7 only
+      }
     };
-    
-    window.onload = start_swfupload;
-  </script>';
-  
-  return $js;
+    window.onload = start_swfupload;', 'inline'
+  );
 }
 
 function _swfupload_form($node) {
   global $user;
   $path = drupal_get_path('module', 'swfupload');
-
-  drupal_set_html_head(_swfupload_get_js()); // i prefer to add the swfupload js this way because otherwise  it may interfere 
-                                             // with other js, e.g. from webfm module
-  // drupal_add_js($path.'/swfupload/SWFUpload.js');  
-  // drupal_add_js($path.'/callbacks.js');  
-  
   drupal_add_css($path .'/swfupload.css');
+  _swfupload_add_js();  
   
   $form['#theme'] = 'upload_form_new';
 
