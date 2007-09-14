@@ -8,7 +8,7 @@ function swfupload_requirements($phase) {
   $t = get_t();
   $requirements = array('swfupload' => array('title' => $t('SWFUpload')));
   $path = drupal_get_path('module', 'swfupload') .'/swfupload';
-  if (!file_exists($path .'/swfupload.swf') || !file_exists($path .'/swfupload.js')) { 
+  if (!file_exists($path .'/SWFUpload.swf') || !file_exists($path .'/SWFUpload.js')) { 
     $requirements['swfupload']['value'] = $t('Missing files');
     $requirements['swfupload']['description'] = $t('You must install the minimalistic <a href="@swfupload">SWFUpload</a> library to %swfuploadpath.', array('@swfupload' => 'http://swfupload.mammon.se', '%swfuploadpath' => $path));
     $requirements['swfupload']['severity'] = REQUIREMENT_ERROR; 
