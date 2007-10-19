@@ -7,8 +7,8 @@
 function swfupload_requirements($phase) {
   $t = get_t();
   $requirements = array('swfupload' => array('title' => $t('SWFUpload')));
-  $path = drupal_get_path('module', 'swfupload') .'/swfupload';
-  if (!file_exists($path .'/SWFUpload.swf') || !file_exists($path .'/SWFUpload.js')) { 
+  $path = drupal_get_path('module', 'swfupload') .'/swfupload/';
+  if (!file_exists($path .'swfupload.swf') || !file_exists($path .'swfupload.js')) { 
     $requirements['swfupload']['value'] = $t('Missing files');
     $requirements['swfupload']['description'] = $t('You must install the minimalistic <a href="@swfupload">SWFUpload</a> library to %swfuploadpath.', array('@swfupload' => 'http://swfupload.mammon.se', '%swfuploadpath' => $path));
     $requirements['swfupload']['severity'] = REQUIREMENT_ERROR; 
@@ -19,11 +19,15 @@ function swfupload_requirements($phase) {
   return $requirements;
 }
 
-function swfupload_generate($callback = 'swfupload_default') {
-  _swfupload_add_js($callback);
+function swfupload_generate($name = 'swfupload_default') {
+  static $cssadded = FALSE;
+  _swfupload_add_js($name);
   $path = drupal_get_path('module', 'swfupload');
-  drupal_add_css($path .'/swfupload.css');
-  return _swfupload_interface($callback);
+  if ($cssadded == FALSE) {
+    $cssadded = TRUE;
+    drupal_add_css($path .'/swfupload.css');
+  }
+  return _swfupload_interface($name);
 }
 
 /**
@@ -31,7 +35,6 @@ function swfupload_generate($callback = 'swfupload_default') {
  */
 function swfupload_menu($may_cache) {
   $items = array();
-
   if ($may_cache) {
     $items[] = array(
       'path' => 'swfupload/js',
@@ -72,10 +75,19 @@ function _swfupload_user_access($key) {
 
 function _swfupload_swfupload() {
   // Load drupal session and get session vars
-  $callback = arg(1);
+  $name = arg(1);
   $session_id = arg(2);
   session_id($session_id);
   session_decode(sess_read($session_id));
+  
+  // Check for upload error
+	if (!isset($_FILES["Filedata"]) || !is_uploaded_file($_FILES["Filedata"]["tmp_name"]) || $_FILES["Filedata"]["error"] != 0) {
+		header("HTTP/1.1 500 File Upload Error");
+		if (isset($_FILES["Filedata"])) {
+			echo $_FILES["Filedata"]["error"];
+		}
+		exit(0);
+	}
 
   // Adapt to drupal files structure
 
@@ -126,13 +138,12 @@ function _swfupload_swfupload() {
     // preview or attach. See earlier notes.
     $_SESSION['file_current_upload'] = $key;
     
-    if (function_exists($callback)) {
-      call_user_func_array($callback, array('file', $file));
-    }
+    module_invoke_all('swfupload', $name, array('file' => $file));
   }
   
   // write to drupal session 
   sess_write($session_id, session_encode());
+  echo 'complete';
 }
 
 /**
@@ -197,49 +208,6 @@ function swfupload_form_alter($form_id, &$form) {
   }
 }
 
-function _swfupload_add_js($callback = 'swfupload_default') {
-  global $user;
-  $path = drupal_get_path('module', 'swfupload');
-  drupal_add_js($path .'/swfupload/SWFUpload.js');
-  drupal_add_js($path .'/callbacks.js');
-  drupal_add_js('
-    var swfu;
-    var swfu2;
-    var progressbarimage = "'. base_path() . $path .'/images/progressbar.png";    
-    function start_swfupload() {
-      // Max settings
-      swfu = new SWFUpload({
-        upload_script : "'. url('flash_upload/'. $callback .'/'. session_id() .'/'. $user->uid) .'",
-        target : "SWFUploadTarget",
-        flash_path : "'. base_path() . $path .'/swfupload/SWFUpload.swf",
-        allowed_filesize : 99720,    // 30 MB
-        allowed_filetypes : "*.*",
-        allowed_filetypes_description : "'. t('All files...') . '",
-        browse_link_innerhtml : "'. t('Browse') . '",
-        upload_link_innerhtml : "'. t('Upload queue') . '",
-        browse_link_class : "swfuploadbtn browsebtn",
-        upload_link_class : "swfuploadbtn uploadbtn",
-        flash_loaded_callback : \'swfu.flashLoaded\',
-        upload_file_queued_callback : "swfupload_fileQueued",
-        upload_file_start_callback : \'swfupload_uploadFileStart\',
-        upload_progress_callback : \'swfupload_uploadProgress\',
-        upload_file_complete_callback : \'swfupload_uploadFileComplete\',
-        upload_file_cancel_callback : \'swfupload_uploadFileCancelled\',
-        upload_queue_complete_callback : \'uploadQueueComplete\',
-        upload_error_callback : \'swfupload_uploadError\',
-        upload_cancel_callback : \'swfupload_uploadCancel\',
-        auto_upload : false,
-        debug : false,
-        create_ui : $.browser.msie // <-- added this line if using IE7 only
-      });
-      if ($.browser.msie) {
-        swfu.loadUI(); // <-- added this line if using IE7 only
-      }
-    };
-    window.onload = start_swfupload;', 'inline'
-  );
-}
-
 function _swfupload_form($node) {
   global $user;
   $path = drupal_get_path('module', 'swfupload');
@@ -290,13 +258,35 @@ function _swfupload_form($node) {
   return $form;
 }
 
-function _swfupload_interface($callback = 'swfupload_default') {
-  $interface = '<div id="SWFUploadTarget">
+function _swfupload_interface($name = 'swfupload_default', $arguments = array()) {
+  $uploadbuttontitle = isset($arguments['uploadbuttontitle']) ? $arguments['uploadbuttontitle'] : t('Browse');
+  $cancelbuttontitle = isset($arguments['cancelbuttontitle']) ? $arguments['cancelbuttontitle'] : t('Cancel Queue');
+  $interface = <<<EOT
+  <div id="flash_$name" style="display: none;">
+		<fieldset class="flash" id="uploadprogress_$name">
+			<legend>Queue</legend>
+		</fieldset>
+		<div>
+			<input type="button" value="$uploadbuttontitle" onclick="$name.selectFiles()" />
+			<input id="cancelbutton_$name" type="button" value="$cancelbuttontitle" onclick="cancelQueue($name);" disabled="disabled" /><br />
+		</div>
+	</div>
+	<div id="degraded_$name">
+		<fieldset>
+			<legend>Files</legend>
+			<input type="file" name="anyfile1" /> (Any file)<br/>
+		</fieldset>
+		<div>
+			<input type="submit" value="Submit Files" />
+		</div>
+	</div>
+EOT;
+  /*$interface = '<div id="SWFUploadTarget">
   <input name="files[upload]" class="form-file" id="edit-upload" size="40" type="file" />
   </div>
   <h4 id="queueinfo">'. t('Queue is empty') . '</h4>
   <div id="SWFUploadFileListingFiles"></div>
-  <a class="swfuploadbtn" id="cancelqueuebtn" href="javascript:swfupload_cancelQueue();">'. t('Cancel queue') . '</a>';
+  <a class="swfuploadbtn" id="cancelqueuebtn" href="javascript:swfupload_cancelQueue();">'. t('Cancel queue') . '</a>';*/
   return $interface;
 }
 
@@ -327,4 +317,66 @@ function swfupload_js() {
   // We send the updated file attachments form.
   print drupal_to_js(array('status' => TRUE, 'data' => $output));
   exit;
+}
+
+/**
+ * Adds the javascript
+ */ 
+function _swfupload_add_js($name = 'swfupload_default', $arguments = array()) {
+  global $user;
+  $path = drupal_get_path('module', 'swfupload');
+  drupal_add_js($path .'/swfupload/swfupload.js');
+  drupal_add_js($path .'/callbacks.js');
+  
+  $upload_url = url('flash_upload/'. $name .'/'. session_id() .'/'. $user->uid, NULL, NULL, TRUE);
+  $phpsessid = session_id();
+  $flash_url = url($path .'/swfupload/swfupload.swf', NULL, NULL, TRUE);
+  $file_size_limit = empty($arguments['file_size_limit']) ? 99720 : $arguments['file_size_limit'];
+  $file_types = empty($arguments['file_types']) ? '*.*' : $arguments['file_types'];
+  $file_types_description = empty($arguments['file_types_description']) ? t('All Files') : $arguments['file_types_description'];
+  $file_upload_limit = empty($arguments['file_upload_limit']) ? 0 : $arguments['file_upload_limit'];
+	$file_queue_limit = empty($arguments['file_queue_limit']) ? 0 : $arguments['file_queue_limit'];
+  
+  $js = <<<EOT
+    var $name;   
+    function start_$name() {
+      $name = new SWFUpload({
+        // Backend Settings
+        upload_url : "$upload_url",
+        post_params: {"PHPSESSID" : "$phpsessid"},
+        
+        // File Upload Settings
+        flash_url : "$flash_url",
+        file_size_limit : "$file_size_limit",
+        file_types : "$file_types",
+        file_types_description : "$file_types_description",
+        file_upload_limit : "$file_upload_limit",
+				file_queue_limit : "$file_queue_limit",
+
+				// Event Handler Settings (all my handlers are in the Handler.js file)
+				file_dialog_start_handler : fileDialogStart,
+				file_queued_handler : fileQueued,
+				file_queue_error_handler : fileQueueError,
+				file_dialog_complete_handler : fileDialogComplete,
+				upload_start_handler : uploadStart,
+				upload_progress_handler : uploadProgress,
+				upload_error_handler : uploadError,
+				upload_complete_handler : uploadComplete,
+				file_complete_handler : fileComplete,
+
+				// Flash Settings
+				flash_url : "$flash_url",
+				
+				// UI Settings
+				ui_container_id : "flash_$name",
+				degraded_container_id : "degraded_$name",
+				
+        debug : false
+      });
+			$name.customSettings.progressTarget = "uploadprogress_$name";	// Add an additional setting that will later be used by the handler.
+			$name.customSettings.cancelButtonId = "cancelbutton_$name";			// Add an additional setting that will later be used by the handler.
+    };
+    window.onload = start_$name;
+EOT;
+  drupal_add_js($js, 'inline');
 }

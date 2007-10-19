@@ -5,7 +5,6 @@
  * Install hook for the SWFUpload module to change the module's height
  */
 function swfupload_install() {
-  db_query("UPDATE {system} SET weight='10' WHERE name='swfupload' AND type='module'");
 }
 
 /**
@@ -14,5 +13,14 @@ function swfupload_install() {
 function swfupload_update_1() {
   $items = array();
   $items[] = update_sql("UPDATE {system} SET weight='10' WHERE name='swfupload' AND type='module'");
+  return $items;
+}
+
+/**
+ * Update hook for SWFUpload to set the weight of the module
+ */ 
+function swfupload_update_2() {
+  $items = array();
+  $items[] = update_sql("UPDATE {system} SET weight='0' WHERE name='swfupload' AND type='module'");
   return $items;
 }
