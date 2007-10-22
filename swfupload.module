@@ -39,12 +39,12 @@ function swfupload_menu($may_cache) {
     $items[] = array(
       'path' => 'swfupload/js',
       'callback' => 'swfupload_js',
-      'access' => user_access('upload files'),
+      'access' => TRUE, //user_access('upload files'),
       'type' => MENU_CALLBACK
     );
     $items[] = array('path' => 'flash_upload',
       'callback' => '_swfupload_swfupload',
-      'access' => _swfupload_user_access(arg(2)),
+      'access' => TRUE, //_swfupload_user_access(arg(2)),
       'type' => MENU_CALLBACK
     );    
   }
@@ -143,7 +143,12 @@ function _swfupload_swfupload() {
   
   // write to drupal session 
   sess_write($session_id, session_encode());
-  echo 'complete';
+  echo '<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+    <html xmlns="http://www.w3.org/1999/xhtml" >
+      <head><title>SWFUpload Revision 7.0 beta 2 Demo</title></head>
+      <body><p>Upload Complete</p></body>
+    </html>';
+  exit;
 }
 
 /**
@@ -304,15 +309,10 @@ function swfupload_js() {
   _upload_prepare($node);
   _upload_validate($node);
 
-  $form = _swfupload_form($node,TRUE); 
-  foreach (module_implements('form_alter') as $module) {
-    $function = $module .'_form_alter';
-    $function('swfupload_js', $form);
-  }
+  $form = _swfupload_form($node, TRUE);
+  module_invoke_all('form_alter', 'swfupload_js', $form);
   $form = form_builder('swfupload_js', $form);
   $output = theme('status_messages') . drupal_render($form);
-  
-  $output .= '<script type="text/javascript">swfupload_clearQueue();</script>';
 
   // We send the updated file attachments form.
   print drupal_to_js(array('status' => TRUE, 'data' => $output));
@@ -328,7 +328,7 @@ function _swfupload_add_js($name = 'swfupload_default', $arguments = array()) {
   drupal_add_js($path .'/swfupload/swfupload.js');
   drupal_add_js($path .'/callbacks.js');
   
-  $upload_url = url('flash_upload/'. $name .'/'. session_id() .'/'. $user->uid, NULL, NULL, TRUE);
+  $upload_url = url('flash_upload/'. $name .'/'. session_id() .'/'. $user->uid .'/', NULL, NULL, TRUE);
   $phpsessid = session_id();
   $flash_url = url($path .'/swfupload/swfupload.swf', NULL, NULL, TRUE);
   $file_size_limit = empty($arguments['file_size_limit']) ? 99720 : $arguments['file_size_limit'];
@@ -371,7 +371,7 @@ function _swfupload_add_js($name = 'swfupload_default', $arguments = array()) {
 				ui_container_id : "flash_$name",
 				degraded_container_id : "degraded_$name",
 				
-        debug : false
+        debug : true
       });
 			$name.customSettings.progressTarget = "uploadprogress_$name";	// Add an additional setting that will later be used by the handler.
 			$name.customSettings.cancelButtonId = "cancelbutton_$name";			// Add an additional setting that will later be used by the handler.

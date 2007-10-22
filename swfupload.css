@@ -34,7 +34,6 @@
 	color: #555555;
 	
 	width: 323px;
-	height: 14px;
 	text-align: left;
 	white-space: nowrap;
 	overflow: hidden;
@@ -77,7 +76,7 @@ a.progressCancel:hover
 	height: 14px;
 	width: 14px;
 	
-	background-image: url(../images/cancelbutton.gif);
+	background-image: url(images/cancelbutton.gif);
 	background-repeat: no-repeat;
 	background-position: -14px 0px;
 	float: right;

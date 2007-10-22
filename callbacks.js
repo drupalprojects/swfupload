@@ -77,12 +77,12 @@ function fileQueueError(fileObj, error_code, message) {
 
 function fileDialogComplete(num_files_queued) {
 	try {
-	if (this.getStats().files_queued > 0) {
-		document.getElementById(this.customSettings.cancelButtonId).disabled = false;
-	}
-	
-	/* I want auto start and I can do that here */
-	this.startUpload();
+  	if (this.getStats().files_queued > 0) {
+  		document.getElementById(this.customSettings.cancelButtonId).disabled = false;
+  	
+    	/* I want auto start and I can do that here */
+    	this.startUpload();
+    }
 	} catch (ex)  {
         this.debug(ex);
 	}
