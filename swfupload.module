@@ -7,14 +7,15 @@
 function swfupload_requirements($phase) {
   $t = get_t();
   $requirements = array('swfupload' => array('title' => $t('SWFUpload')));
-  $path = drupal_get_path('module', 'swfupload') .'/swfupload/';
-  if (!file_exists($path .'swfupload.swf') || !file_exists($path .'swfupload.js')) { 
-    $requirements['swfupload']['value'] = $t('Missing files');
-    $requirements['swfupload']['description'] = $t('You must install the minimalistic <a href="@swfupload">SWFUpload</a> library to %swfuploadpath.', array('@swfupload' => 'http://swfupload.mammon.se', '%swfuploadpath' => $path));
-    $requirements['swfupload']['severity'] = REQUIREMENT_ERROR; 
+  $path = drupal_get_path('module', 'swfupload') .'/swfupload';
+  if ((file_exists($path .'/SWFUpload.swf') && file_exists($path .'/SWFUpload.js')) ||
+    (file_exists($path .'/swfupload.swf') && file_exists($path .'/swfupload.js'))) {
+    $requirements['swfupload']['value'] = 'Installed';
   }
   else {
-    $requirements['swfupload']['value'] = 'Installed';
+    $requirements['swfupload']['value'] = $t('Missing files');
+    $requirements['swfupload']['description'] = $t('You must install the minimalistic <a href="@swfupload">SWFUpload</a> library to %swfuploadpath.', array('@swfupload' => 'http://www.swfupload.org', '%swfuploadpath' => $path));
+    $requirements['swfupload']['severity'] = REQUIREMENT_ERROR; 
   }
   return $requirements;
 }
@@ -73,12 +74,17 @@ function _swfupload_user_access($key) {
   return TRUE;
 }
 
+
 function _swfupload_swfupload() {
   // Load drupal session and get session vars
-  $name = arg(1);
-  $session_id = arg(2);
-  session_id($session_id);
+  $name = $_POST['name'];
+  $session_id = $_POST['PHPSESSID'];
+  session_id($_POST['PHPSESSID']);
+  
   session_decode(sess_read($session_id));
+  
+  global $user;
+  $user = user_load(array('uid'=> $_POST['uid']));
   
   // Check for upload error
 	if (!isset($_FILES["Filedata"]) || !is_uploaded_file($_FILES["Filedata"]["tmp_name"]) || $_FILES["Filedata"]["error"] != 0) {
@@ -88,14 +94,19 @@ function _swfupload_swfupload() {
 		}
 		exit(0);
 	}
+	
+  // Get unique key - I use that since I had troubles using count() in this context
+  $index = mt_rand();
+  if (!$index) $index = 0;
+  $key = "upload_".$index;
 
   // Adapt to drupal files structure
 
-  $_FILES['files']['name']['upload'] = $_FILES['Filedata']['name'];
-  $_FILES['files']['type']['upload'] = $_FILES['Filedata']['type'];
-  $_FILES['files']['tmp_name']['upload'] = $_FILES['Filedata']['tmp_name'];
-  $_FILES['files']['error']['upload'] = $_FILES['Filedata']['error'];
-  $_FILES['files']['size']['upload'] = $_FILES['Filedata']['size'];
+  $_FILES['files']['name'][$key] = $_FILES['Filedata']['name'];
+  $_FILES['files']['type'][$key] = $_FILES['Filedata']['type'];
+  $_FILES['files']['tmp_name'][$key] = $_FILES['Filedata']['tmp_name'];
+  $_FILES['files']['error'][$key] = $_FILES['Filedata']['error'];
+  $_FILES['files']['size'][$key] = $_FILES['Filedata']['size'];  
   
   // The following code is taken from the upload.module:
   
@@ -110,6 +121,7 @@ function _swfupload_swfupload() {
       unset($_SESSION['file_previews']);
     }
   }
+  print_r($_SESSION);
 
   // $_SESSION['file_current_upload'] tracks the fid of the file submitted this page request.
   // form_builder sets the value of file->list to 0 for checkboxes added to a form after
@@ -117,18 +129,14 @@ function _swfupload_swfupload() {
   // get a key in _POST form_builder has no way of knowing the difference between a check
   // box that wasn't present on the last form build, and a checkbox that is unchecked.
 
-  unset($_SESSION['file_current_upload']);
+  //unset($_SESSION['file_current_upload']);
 
   // Save new file uploads to tmp dir.
-  if ($file = file_check_upload()) {
+  if ($file = file_check_upload($key)) {
 
     // Scale image uploads.
     $file = _upload_image($file);
     
-    // Get unique key - I use that since I had troubles using count() in this context
-    $index = mt_rand();
-    if (!$index) $index = 0;
-    $key = "upload_".$index;
 
     $file->fid = $key;
     $file->source = $key;
@@ -138,17 +146,23 @@ function _swfupload_swfupload() {
     // preview or attach. See earlier notes.
     $_SESSION['file_current_upload'] = $key;
     
-    module_invoke_all('swfupload', $name, array('file' => $file));
+    //module_invoke_all('swfupload', $name, array('file' => $file));
   }
   
   // write to drupal session 
   sess_write($session_id, session_encode());
+  
+  //global $user;
+  //$user = user_load(array('uid'=> $uid));
+  
+  //print_r($_SESSION);
   echo '<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
     <html xmlns="http://www.w3.org/1999/xhtml" >
       <head><title>SWFUpload Revision 7.0 beta 2 Demo</title></head>
       <body><p>Upload Complete</p></body>
     </html>';
-  exit;
+    exit(0);
+  //}
 }
 
 /**
@@ -328,9 +342,9 @@ function _swfupload_add_js($name = 'swfupload_default', $arguments = array()) {
   drupal_add_js($path .'/swfupload/swfupload.js');
   drupal_add_js($path .'/callbacks.js');
   
-  $upload_url = url('flash_upload/'. $name .'/'. session_id() .'/'. $user->uid .'/', NULL, NULL, TRUE);
+  $upload_url = url('flash_upload', NULL, NULL, TRUE);
   $phpsessid = session_id();
-  $flash_url = url($path .'/swfupload/swfupload.swf', NULL, NULL, TRUE);
+  $flash_url = base_path() . $path .'/swfupload/swfupload.swf';
   $file_size_limit = empty($arguments['file_size_limit']) ? 99720 : $arguments['file_size_limit'];
   $file_types = empty($arguments['file_types']) ? '*.*' : $arguments['file_types'];
   $file_types_description = empty($arguments['file_types_description']) ? t('All Files') : $arguments['file_types_description'];
@@ -343,7 +357,11 @@ function _swfupload_add_js($name = 'swfupload_default', $arguments = array()) {
       $name = new SWFUpload({
         // Backend Settings
         upload_url : "$upload_url",
-        post_params: {"PHPSESSID" : "$phpsessid"},
+        post_params: {
+          "PHPSESSID" : "$phpsessid",
+          "name" : "$name",
+          "uid" : "$user->uid"
+        },
         
         // File Upload Settings
         flash_url : "$flash_url",
