@@ -471,8 +471,8 @@ function swfupload_elements() {
     '#filepath' => file_directory_path(),
     '#max_img_resolution' => '800x600',
     '#file_extensions' => 'jpg jpeg gif png txt',
-    '#max_file_size' => intval(ini_get('upload_max_filesize')), // The maximum bytes per file
-    '#max_queue_size' => intval(ini_get('upload_max_filesize')), // The maximum bytes in the queue
+    '#max_file_size' => intval(ini_get('upload_max_filesize')) .'MB', // The maximum megabytes per file
+    '#max_queue_size' => intval(ini_get('upload_max_filesize')) .'MB', // The maximum megabytes in the queue
     '#node_settings' => array(), // Used to pass the settings for the current node to hook_swfupload. 
   );
   return $type;
@@ -497,7 +497,7 @@ function _swfupload_add_js($element) {
       'instance' => drupal_to_js(array('name' => $element['#name'])),
       'node_settings' => drupal_to_js($element['#node_settings']),
     ),
-    'file_size_limit' => $element['#max_file_size'] .'B',
+    'file_size_limit' => $element['#max_file_size'],
     'file_types' => '*.'. str_replace(" ", ";*.", $element['#file_extensions']),
     'file_types_description' => ($element['#description'] ? $element['#description'] : ''),
     'file_upload_limit' => $element['#max_files'],
