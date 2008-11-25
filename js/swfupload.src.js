@@ -493,7 +493,7 @@ function SWFU(id, settings) {
     if (ref.max_queue_size && ref.max_queue_size !== 0) {
       // Check if the new file does not exceed the max queue size
       if ((ref.upload_stack_size + file.size) > ref.max_queue_size) {
-        var max_queue_mbs = ((ref.max_queue_size / 1024) / 1024);
+        var max_queue_mbs = ref.getMbs(ref.max_queue_size);
         var file_mbs = ((file.size / 1024) / 1024);
         ref.swfu.cancelUpload(file.id);
         ref.displayMessage(Drupal.t('The file size (!num1 MB) exceeds the upload size (!num2 MB) for this page!', {'!num1':file_mbs.toFixed(2), '!num2':max_queue_mbs.toFixed(2)}), 'error');
@@ -512,13 +512,33 @@ function SWFU(id, settings) {
   ref.fileQueueError = function(file, code, message) {
     switch (code) {
       case -110: // The file selected is too large
-        var max_file_mbs = ((parseInt(ref.settings.file_size_limit) / 1024) / 1024);
+        var max_file_mbs = ref.getMbs(ref.settings.file_size_limit);
         var file_mbs = ((file.size / 1024) / 1024);
         ref.displayMessage(Drupal.t('The file size (!num1 MB) exceeds the file size limit (!num2 MB)!', {'!num1':file_mbs.toFixed(2), '!num2':max_file_mbs.toFixed(2)}), 'error');
         break;
       default:
         break;
     };
+  };
+
+  /**
+   * Calculates the MB's from a given string
+   */
+  ref.getMbs = function(size) {
+    // B, KB, MB and GB
+    if (size.indexOf('MB') > -1) {
+      return parseInt(size);
+    }
+    else if (size.indexOf('GB') > -1) {
+      return (parseInt(size) * 1024);
+    }
+    else if (size.indexOf('KB') > -1) {
+      return (parseInt(size) / 1024);
+    }
+    else if (size.indexOf('B') > -1) {
+      return ((parseInt(size) / 1024) / 1024);
+    };
+    return false;
   };
 
   /**
