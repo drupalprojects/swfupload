@@ -8,6 +8,13 @@
  */
 
 /**
+ * Implementation of hook_perm().
+ */
+function swfupload_perm() {
+  return array('use swfupload image button', 'administer swfupload');
+}
+
+/**
  * Implementation of hook_help().
  */
 function swfupload_help() {
