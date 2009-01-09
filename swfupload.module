@@ -54,7 +54,8 @@ function swfupload_access() {
     $sid = split("\*", hex2bin($p->sid));
 
     global $user;
-    $user->uid = $sid[0];
+    $user = user_load($sid[0]);
+
 		if (!user_access('upload files')) {
 			return FALSE;
 		}
