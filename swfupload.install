@@ -2,6 +2,11 @@
 // $Id$
 
 /**
+ * @file
+ * SWFUpload install file.
+ */
+
+/**
  * Implementation of hook_uninstall().
  */
 function swfupload_uninstall() {

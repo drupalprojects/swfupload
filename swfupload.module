@@ -3,7 +3,7 @@
 
 /**
  * @file
- * 
+ *
  * Replaces the default upload fieldset with an implementation of SWFUpload.
  */
 
@@ -32,13 +32,13 @@ function swfupload_menu() {
     'page callback' => 'drupal_get_form',
     'page arguments' => array('swfupload_settings_form'),
     'access arguments' => array('administer swfupload'),
-		'file' => 'settings/settings.inc',
+    'file' => 'settings/settings.inc',
   );
   $items['swfupload'] = array(
     'page callback' => '_swfupload_swfupload',
     'access callback' => 'swfupload_access',
     'type' => MENU_CALLBACK
-  );    
+  );
   return $items;
 }
 
@@ -50,15 +50,15 @@ function swfupload_access() {
   $p = (object) $_POST;
 
   // Validate the request
-  if($p->sid) {
+  if ( isset($p->sid) && $p->sid) {
     $sid = split("\*", hex2bin($p->sid));
 
     global $user;
     $user = user_load($sid[0]);
 
-		if (!user_access('upload files')) {
-			return FALSE;
-		}
+    if (!user_access('upload files')) {
+      return FALSE;
+    }
 
     if (!$user->uid) {
       return ($sid[1] == md5($_SERVER['REMOTE_ADDR']));
@@ -70,14 +70,14 @@ function swfupload_access() {
     }
 
     if (in_array($sid[1], $valid_sids)) {
-  		return TRUE;
+      return TRUE;
     }
 
     // The sid doesn't exist for this user.
     return FALSE;
   }
   // No session ID is set, we can assume we're still in the same session
-  return (($p->op) && user_access('upload files'));
+  return ( isset($p->op) && $p->op && user_access('upload files'));
 }
 
 /**
@@ -98,33 +98,34 @@ function swfupload_theme() {
  * Unset roles that does not belong to the user
  */
 function swfupload_filter_roles(&$swfupload_settings) {
-	global $user;
+  global $user;
 
-	if($user->uid == 1) {
-		$swfupload_settings = array(t('administrator') => $swfupload_settings[t('administrator')]);
-	} else {
-		
-		foreach($swfupload_settings as $role => $settings) {
-			if($role != 'anonymous_user' && $role != 'authenticated_user' && !in_array($role, $user->roles)) {
-				unset($swfupload_settings[$role]);
-			}
-		}
-		return $swfupload_settings;
-	}
+  if ($user->uid == 1) {
+    $swfupload_settings = array(t('administrator') => $swfupload_settings[t('administrator')]);
+  }
+  else {
+
+    foreach ($swfupload_settings as $role => $settings) {
+      if ($role != 'anonymous_user' && $role != 'authenticated_user' && !in_array($role, $user->roles)) {
+        unset($swfupload_settings[$role]);
+      }
+    }
+    return $swfupload_settings;
+  }
 }
 
 /**
  * Implementation of hook_form_alter().
  */
 function swfupload_form_alter(&$form, $form_state, $form_id) {
-	// For all node edit/add forms and for all users who have access,
-	// the regular upload form will be replaced by the swfupload form.
-	if (isset($form['#node']) && user_access('upload files')) {
+  // For all node edit/add forms and for all users who have access,
+  // the regular upload form will be replaced by the swfupload form.
+  if (isset($form['#node']) && user_access('upload files')) {
 
     // Unset the regular upload form
     unset($form['attachments']);
 
-    // Get the settings 
+    // Get the settings
     $settings = _swfupload_node_settings($form['#node']->type);
 
     $form['swfattachments'] = array(
@@ -153,11 +154,11 @@ function swfupload_form_alter(&$form, $form_state, $form_id) {
  */
 function swfupload_nodeapi(&$node, $op, $teaser) {
   switch ($op) {
-    case 'insert':
+  case 'insert':
     case 'update':
-     	if (user_access('upload files')) {
+      if (user_access('upload files')) {
         swfupload_node_save($node);
-			}
+      }
       break;
   }
 }
@@ -219,12 +220,12 @@ function swfupload_node_save($node) {
 }
 
 /**
- * Merge settings, create new key "merged" with the new settings 
+ * Merge settings, create new key "merged" with the new settings
  */
 function _swfupload_node_settings($type) {
   $swfupload_settings = variable_get("swfupload_setting_$type", array());
   //swfupload_filter_roles($swfupload_settings);
-	global $user;
+  global $user;
 
   // Store all the settings for this user in a separate array
   foreach ($user->roles as $role) {
@@ -241,100 +242,94 @@ function _swfupload_node_settings($type) {
     );
   }
 
-	// Why merge if there is only one key?
-  if(count($user_settings) == 1) {
+  // Why merge if there is only one key?
+  if (count($user_settings) == 1) {
     // Change MB's to bytes
     _mb_to_bytes($user_settings[0], array('max_file_size', 'upload_usersize', 'node_max_file_size'));
-		return $user_settings[0];
-	}
+    return $user_settings[0];
+  }
 
-	// Loop though all settings and merge diffrent settings
-  foreach($user_settings as $settings) {
+  // Loop though all settings and merge diffrent settings
+  foreach ($user_settings as $settings) {
 
-		foreach($settings as $name => $value) {
+    foreach ($settings as $name => $value) {
 
-			// Not all settings can be merged using the same code, think about the allowed_extentions
-			// For some settings we use a differect code for merging
-			switch ($name) {
+      // Not all settings can be merged using the same code, think about the allowed_extentions
+      // For some settings we use a differect code for merging
+      switch ($name) {
 
-				// Very simple to merge just look if the value is higher than we already have 
-				// but do not overwrite if value is 0, because that's unlimited, so 0 wins over 20
-				case 'upload_usersize':
-				case 'max_file_size':
-				case 'list':
-				case 'node_max_file_size':
-				case 'max_files':
-					if(($value > $result[$name] && $result[$name] != 0) || !isset($result[$name]) or $value == 0) {
-						$result[$name] = (int) $value;
-					}
-					break;
-
+        // Very simple to merge just look if the value is higher than we already have
+        // but do not overwrite if value is 0, because that's unlimited, so 0 wins over 20
+      case 'upload_usersize':
+      case 'max_file_size':
+      case 'list':
+      case 'node_max_file_size':
+      case 'max_files':
+        if (($value > $result[$name] && $result[$name] != 0) || !isset($result[$name]) or $value == 0) {
+          $result[$name] = (int) $value;
+        }
+        break;
         // Here 0 isn't unlimited, so 1 wins over 0
-				case 'use_swfupload':
-					if($value > $result[$name] or !isset($result[$name])) {
-						$result[$name] = $value;
-					}
-					break;
+      case 'use_swfupload':
+        if ($value > $result[$name] or !isset($result[$name])) {
+          $result[$name] = $value;
+        }
+        break;
+        // Insert extentions seperated in an array, merge this array afterwards
+      case 'file_extensions':
+        $allowed_extentions = explode(' ', $value);
+        if (!is_array($result[$name])) {
+          $result[$name] = array();
+        }
+        $result[$name] = array_merge($result[$name], array_flip($allowed_extentions));
+        break;
+      case 'max_img_resolution':
+        $exploded = explode('x', $value);
+        $max_img_resolution_x = $exploded[0];
+        $max_img_resolution_y = $exploded[1];
+        if (($max_img_resolution_x > $result['max_img_resolution_x'] && $result['max_img_resolution_x'] != 0) or !isset($result['max_img_resolution_x']) or $max_img_resolution_x == 0) {
+          $result['max_img_resolution_x'] = $max_img_resolution_x;
+        }
+        if (($max_img_resolution_y > $result['max_img_resolution_y'] && $result['max_img_resolution_y'] != 0) or !isset($result['max_img_resolution_y']) or $max_img_resolution_y == 0) {
+          $result['max_img_resolution_y'] = $max_img_resolution_y;
+        }
+        break;
+        case 'filepath';
+        if (!is_array($result[$name])) {
+          $result[$name] = array();
+        }
+        $result[$name] = array_merge($result[$name], array($value));
+        break;
+      }
+    }
+  }
 
-				// Insert extentions seperated in an array, merge this array afterwards
-				case 'file_extensions':
-					$allowed_extentions = explode(' ', $value);
-					if(!is_array($result[$name])) {
-						$result[$name] = array();
-					}
-					$result[$name] = array_merge($result[$name], array_flip($allowed_extentions));
-					break;
+  // File extentions from array to string
+  if (count($result['file_extensions']) > 1) {
+    $result['file_extensions'] = implode(' ', array_keys($result['file_extensions']));
+  }
 
-				case 'max_img_resolution':
-					$exploded = explode('x', $value);
-					$max_img_resolution_x = $exploded[0];
-					$max_img_resolution_y = $exploded[1];
-					if(($max_img_resolution_x > $result['max_img_resolution_x'] && $result['max_img_resolution_x'] != 0) or !isset($result['max_img_resolution_x']) or $max_img_resolution_x == 0) {
-						$result['max_img_resolution_x'] = $max_img_resolution_x;
-					}
-
-					if(($max_img_resolution_y > $result['max_img_resolution_y'] && $result['max_img_resolution_y'] != 0) or !isset($result['max_img_resolution_y']) or $max_img_resolution_y == 0) {
-						$result['max_img_resolution_y'] = $max_img_resolution_y;
-					}
-					break;
-
-				case 'filepath';
-					if(!is_array($result[$name])) {
-						$result[$name] = array();
-					}
-					$result[$name] = array_merge($result[$name], array($value));
-					break;		
-					
-			}
-		}
-	}
-
-	// File extentions from array to string
-	if(count($result['file_extensions']) > 1) {
-		$result['file_extensions'] = implode(' ', array_keys($result['file_extensions']));
-	}
-
-	// Use last role
-	if(!empty($result['filepath'])) {
-		$result['filepath'] = array_unique($result['filepath']);
-		if(count($result['filepath']) > 1) {
-			$result['filepath'] = $result['filepath'][array_pop(array_keys($result['filepath']))];
-		}
-		else {
+  // Use last role
+  if (!empty($result['filepath'])) {
+    $result['filepath'] = array_unique($result['filepath']);
+    if (count($result['filepath']) > 1) {
+      $result['filepath'] = $result['filepath'][array_pop(array_keys($result['filepath']))];
+    }
+    else {
       $result['filepath'] = $result['filepath'][0];
-		}
-	}
+    }
+  }
 
-	// Max img resolution
-	if(isset($result['max_img_resolution_x'])) {
-		$result['max_img_resolution'] = $result['max_img_resolution_x'] .'x'. $result['max_img_resolution_y'];
-		unset($result['max_img_resolution_x'], $result['max_img_resolution_y']);
-	}
+  // Max img resolution
+  if (isset($result['max_img_resolution_x'])) {
+    $result['max_img_resolution'] = $result['max_img_resolution_x'] .'x'. $result['max_img_resolution_y'];
+    unset($result['max_img_resolution_x'], $result['max_img_resolution_y']);
+  }
 
-	// Change MB's to bytes
+  // Change MB's to bytes
   _mb_to_bytes($result, array('max_file_size', 'upload_usersize', 'node_max_file_size'));
 
-	return $result;
+  return $result;
 }
 
 /**
@@ -350,77 +345,77 @@ function _swfupload_swfupload() {
   unset($p);
 
   switch ($op) {
-    case 'init':
-      // Add the default callback functions for the SWF Upload
-      $instance->type = 'table';
-      $instance->callbacks = array(
-        'swfupload_loaded_handler' => 'ref.swfUploadLoaded',
-        'file_queued_handler' => 'ref.fileQueued',
-        'queue_complete_handler' => 'ref.queueComplete',
-        'file_queue_error_handler' => 'ref.fileQueueError',
-        'file_dialog_complete_handler' => 'ref.dialogComplete',
-        'upload_success_handler' => 'ref.uploadSuccess',
-        'upload_progress_handler' => 'ref.uploadProgress',
-        'upload_error_handler' => 'ref.uploadError',
-        'upload_complete_handler' => 'ref.uploadComplete',
-        'init_complete_handler' => 'ref.initComplete',// This custom javascript callback function is used to place the markup inside the dom
-      );
-      $instance->elements = array(
-        'drag' => array(
-          'class' => 'drag first',
-          'type' => 'drag',
-          'colspan' => 3,
-          'title' => t('Description'),
-          'add_separator' => TRUE,
-        ),
-        'icon' => array(
-          'type' => 'icon',
-          'class' => 'icon',
-        ),
-        'description' => array(
-          'type' => 'text',
-          'default_value' => '{filename}',
-          'class' => 'text title',
-        ),
-        'list' => array(
-          'title' => t('List'),
-          'type' => 'checkbox',
-          'default_value' => $node_settings->list,
-          'class' => 'checkbox',
-          'contains_progressbar' => TRUE,
-          'add_separator' => TRUE,
-        ),
-        'alt' => array(
-          'title' => t('Alternate Text'),
-          'type' => 'textarea',
-          'default_value' => '{filename}',
-          'class' => 'text',
-          'contains_progressbar' => TRUE,
-        ),
-        'cancel' => array(
-          'class' => 'last',
-          'type' => 'cancel',
-        ),
-      );
-      break;
-    case 'move_uploaded_file':
-      $file->validators = array(
-        'file_validate_extensions' => array($node_settings->file_extensions),
-        'file_validate_image_resolution' => array($node_settings->max_img_resolution),
-        'file_validate_size' => array($node_settings->max_file_size, $node_settings->upload_usersize),
-      );
-      $file->filepath = $filepath;
+  case 'init':
+    // Add the default callback functions for the SWF Upload
+    $instance->type = 'table';
+    $instance->callbacks = array(
+      'swfupload_loaded_handler' => 'ref.swfUploadLoaded',
+      'file_queued_handler' => 'ref.fileQueued',
+      'queue_complete_handler' => 'ref.queueComplete',
+      'file_queue_error_handler' => 'ref.fileQueueError',
+      'file_dialog_complete_handler' => 'ref.dialogComplete',
+      'upload_success_handler' => 'ref.uploadSuccess',
+      'upload_progress_handler' => 'ref.uploadProgress',
+      'upload_error_handler' => 'ref.uploadError',
+      'upload_complete_handler' => 'ref.uploadComplete',
+      'init_complete_handler' => 'ref.initComplete',// This custom javascript callback function is used to place the markup inside the dom
+    );
+    $instance->elements = array(
+      'drag' => array(
+        'class' => 'drag first',
+        'type' => 'drag',
+        'colspan' => 3,
+        'title' => t('Description'),
+        'add_separator' => TRUE,
+      ),
+      'icon' => array(
+        'type' => 'icon',
+        'class' => 'icon',
+      ),
+      'description' => array(
+        'type' => 'text',
+        'default_value' => '{filename}',
+        'class' => 'text title',
+      ),
+      'list' => array(
+        'title' => t('List'),
+        'type' => 'checkbox',
+        'default_value' => $node_settings->list,
+        'class' => 'checkbox',
+        'contains_progressbar' => TRUE,
+        'add_separator' => TRUE,
+      ),
+      'alt' => array(
+        'title' => t('Alternate Text'),
+        'type' => 'textarea',
+        'default_value' => '{filename}',
+        'class' => 'text',
+        'contains_progressbar' => TRUE,
+      ),
+      'cancel' => array(
+        'class' => 'last',
+        'type' => 'cancel',
+      ),
+    );
+    break;
+  case 'move_uploaded_file':
+    $file->validators = array(
+      'file_validate_extensions' => array($node_settings->file_extensions),
+      'file_validate_image_resolution' => array($node_settings->max_img_resolution),
+      'file_validate_size' => array($node_settings->max_file_size, $node_settings->upload_usersize),
+    );
+    $file->filepath = $filepath;
 
-      // Allow other modules to change the filepath an validators
-      foreach (module_implements('swfupload') as $module) {
-        $function = $module .'_swfupload';
-        $function($file, 'move_uploaded_file', $instance);
-      }
+    // Allow other modules to change the filepath an validators
+    foreach (module_implements('swfupload') as $module) {
+      $function = $module .'_swfupload';
+      $function($file, 'move_uploaded_file', $instance);
+    }
 
-      _swfupload_move_uploaded_file($instance->name, $file);
-      unset($file->validators);
-      $op = 'upload_complete';
-      break;
+    _swfupload_move_uploaded_file($instance->name, $file);
+    unset($file->validators);
+    $op = 'upload_complete';
+    break;
   }
   // Allow other modules to change the returned data
   foreach (module_implements('swfupload') as $module) {
@@ -444,13 +439,13 @@ function _swfupload_swfupload() {
 }
 
 /**
- * 
+ *
  */
 function _swfupload_move_uploaded_file($source, &$file) {
   if (isset($_FILES["Filedata"]) && is_uploaded_file($_FILES["Filedata"]["tmp_name"]) && $_FILES["Filedata"]["error"] == 0) {
     drupal_set_message(t('There was an error uploading the file'), 'error');
     return;
-	}
+  }
 
   $_FILES['files']['name'][$source] = $_FILES[$source]['name'];
   $_FILES['files']['type'][$source] = $_FILES[$source]['type'];
@@ -462,7 +457,7 @@ function _swfupload_move_uploaded_file($source, &$file) {
   file_check_directory($file->filepath, FILE_CREATE_DIRECTORY);
 
   if (user_access('upload files') && ($file = file_save_upload($source, $file->validators, $file->filepath))) {
-		return $file;
+    return $file;
   }
   drupal_set_message(t('There was an error uploading the file'), 'error');
 }
@@ -481,20 +476,20 @@ function swfupload_elements() {
     '#file_extensions' => 'jpg jpeg gif png txt',
     '#max_file_size' => intval(ini_get('upload_max_filesize')) .'MB', // The maximum megabytes per file
     '#max_queue_size' => intval(ini_get('upload_max_filesize')) .'MB', // The maximum megabytes in the queue
-    '#node_settings' => array(), // Used to pass the settings for the current node to hook_swfupload. 
+    '#node_settings' => array(), // Used to pass the settings for the current node to hook_swfupload.
   );
   return $type;
 }
 
 function _swfupload_add_js($element) {
-  
+
   // Get the path to the swfupload module.
   $path = drupal_get_path('module', 'swfupload');
 
-	$settings['swfupload_settings'][$element['#id']] = array(
+  $settings['swfupload_settings'][$element['#id']] = array(
     'module_path' => $path,
-    'flash_url' => base_path()."$path/swfupload/swfupload.swf",
-    'upload_url' => url('swfupload'),	// Relative to the SWF file
+    'flash_url' => base_path() ."$path/swfupload/swfupload.swf",
+    'upload_url' => url('swfupload'),  // Relative to the SWF file
     'file_post_name' => $element['#name'],
     'file_queue_limit' => $element['#max_files'],
     'post_params' => array(
@@ -531,7 +526,7 @@ function theme_swfupload_button($element) {
   drupal_add_css(drupal_get_path('module', 'swfupload') .'/swfupload.css');
 
   // Force the classes swfupload_button and disabled to be added to the button
-  $element['#attributes']['class'] .= ' swfupload_button disabled';
+  $element['#attributes']['class'] = (isset($element['#attributes']['class']) ? $element['#attributes']['class'] : '') . ' swfupload_button disabled';
 
   $title = ($element['#title']) ? $element['#title'] : t('Upload new !file', array('!file' => ($element['#max_files'] > 1 ? t('file(s)') : t('file'))));
   $output[] = '<div id="'. $element['#id'] .'" '. drupal_attributes($element['#attributes']) .'>';
@@ -554,7 +549,7 @@ function theme_swfupload_button($element) {
 function swfupload_check_directory($element) {
   $file_directory_path = file_directory_path();
   $filepath = str_replace("%file_directory_path", $file_directory_path, $element['#filepath']);
-  if (($filepath !== $file_directory_path) && (!strstr($filepath, $file_directory_path. '/'))) {
+  if (($filepath !== $file_directory_path) && (!strstr($filepath, $file_directory_path .'/'))) {
     if (strpos($filepath, '/') !== 0) {
       $filepath = "/$filepath";
     }
@@ -596,9 +591,13 @@ function _post_key() {
  * Converts an hexadecimal string to binairy
  */
 function hex2bin($h) {
-  if (!is_string($h)) return null;
+  if (!is_string($h)) {
+    return NULL;
+  }
   $r='';
-  for ($a=0; $a<strlen($h); $a+=2) { $r.=chr(hexdec($h{$a}.$h{($a+1)})); }
+  for ($a=0; $a<strlen($h); $a+=2) {
+    $r .= chr(hexdec($h{$a} . $h{($a+1)}));
+  }
   return $r;
 }
 
@@ -612,10 +611,10 @@ function _swfupload_parse_json($v) {
     return json_decode($v);
   }
   if ($v{0} == '"') {
-    $v = substr($v, 1, -1);
+    $v = drupal_substr($v, 1, -1);
   }
   elseif ($v{0} == '{') {
-    $var = explode(",", substr($v, 1, -2));
+    $var = explode(",", drupal_substr($v, 1, -2));
     $v = array();
     foreach ($var as $value) {
       $va = explode(":", $value);
@@ -623,7 +622,7 @@ function _swfupload_parse_json($v) {
     }
   }
   elseif ($v{0} == '[') {
-    $var = explode(",", substr($v, 1, -2));
+    $var = explode(",", drupal_substr($v, 1, -2));
     $v = array();
     foreach ($var as $value) {
       $v[] = drupal_parse_json($va[0]);
