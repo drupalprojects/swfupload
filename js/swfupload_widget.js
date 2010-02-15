@@ -268,8 +268,9 @@ function SWFU(id, settings) {
             // For IE we need to check the checkbox after the content has been added to the tr.
             // We'll temporarily store it's value in a classname
             content.append(input.addClass('checkbox ' + (value ? 'checked' : '')));
+            break;
           case 'markup':
-            value = (file) ? (file[name] !== undefined) ? file[name] : ref.replaceMacros(elem_value, file) : elem_value;
+            //value = (file) ? (file[name] !== undefined) ? file[name] : ref.replaceMacros(elem_value, file) : elem_value;
             content.append($('<div />').addClass('swfupload-markup').attr('id', 'swfupload-markup-' + name).html(value));
             break;
           default:

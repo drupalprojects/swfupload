@@ -194,8 +194,10 @@ function swfupload_widget_value($element, $edit = FALSE) {
  * The $fields array is in $form['#field_info'][$element['#field_name']].
  */
 function swfupload_widget_process($element, $edit, $form_state, $form) {
-  $element += imagefield_widget_process($element, $edit, $form_state, $form);
-  unset($element['#theme']);
+  if (module_exists('imagefield')) {
+    $element += imagefield_widget_process($element, $edit, $form_state, $form);
+    unset($element['#theme']);
+  }
   $element['#default_value'] = '[]';
   return $element;
 }
@@ -211,41 +213,42 @@ function swfupload_add_js($element) {
   $field = content_fields($element['#field_name'], $element['#type_name']);
   $swfupload_library = jqp_library_load('swfupload');
 
-  // Put the values of the list field and description field in the widget array
-  // so we can pass it to our hook_swfupload implementation.
-  $field['widget']['list_field'] = $field['list_field'];
-  $field['widget']['list_default'] = $field['list_default'];
-  $field['widget']['description_field'] = $field['description_field'];
-
-  $limit = ($field['multiple'] == 1 ? 0 : ($field['multiple'] == 0 ? 1 : $field['multiple']));
-
-  $settings['swfupload_settings'][$element['#id']] = array(
-    'module_path' => $path,
-    'flash_url' => base_path() . str_replace('.js', '.swf', array_shift($swfupload_library->scripts['2.2.0.1'])),
-    'upload_url' => url('swfupload'),  // Relative to the SWF file
-    'upload_button_id' => $element['#id'],
-    'file_post_name' => $element['#name'],
-    'file_queue_limit' => $limit,
-    'post_params' => array(
-      'sid' => _post_key(),
-      'file_path' => file_directory_path() .'/'. $field['widget']['file_path'],
-      'op' => 'move_uploaded_file',
-      'instance' => drupal_to_js(array('name' => $element['#field_name'])),
-      'widget' => drupal_to_js($field['widget']),
-    ),
-    'file_size_limit' => ($field['widget']['max_filesize_per_file'] ? $field['widget']['max_filesize_per_file'] : 0),
-    'file_types' => '*.'. str_replace(" ", ";*.", $field['widget']['file_extensions']),
-    'file_types_description' => ($element['#description'] ? $element['#description'] : ''),
-    'file_upload_limit' => $limit,
-    'custom_settings' => array(
-      'upload_stack_value' => (!empty($element['#value'])) ? drupal_to_js($element['#value']) : '[]',
-      'max_queue_size' => ($field['widget']['max_filesize_per_node'] ? $field['widget']['max_filesize_per_node'] : 0),
-    ),
-  );
-  drupal_add_js('misc/tabledrag.js');
-  drupal_add_js("$path/js/swfupload_widget.js");
-  drupal_add_library('swfupload', '2.2.0.1');
-  drupal_add_js($settings, 'setting');
+  if (drupal_add_library('swfupload', '2.2.0.1') !== FALSE) {
+    // Put the values of the list field and description field in the widget array
+    // so we can pass it to our hook_swfupload implementation.
+    $field['widget']['list_field'] = $field['list_field'];
+    $field['widget']['list_default'] = $field['list_default'];
+    $field['widget']['description_field'] = $field['description_field'];
+  
+    $limit = ($field['multiple'] == 1 ? 0 : ($field['multiple'] == 0 ? 1 : $field['multiple']));
+  
+    $settings['swfupload_settings'][$element['#id']] = array(
+      'module_path' => $path,
+      'flash_url' => base_path() . str_replace('.js', '.swf', array_shift($swfupload_library->scripts['2.2.0.1'])),
+      'upload_url' => url('swfupload'),  // Relative to the SWF file
+      'upload_button_id' => $element['#id'],
+      'file_post_name' => $element['#name'],
+      'file_queue_limit' => $limit,
+      'post_params' => array(
+        'sid' => _post_key(),
+        'file_path' => file_directory_path() .'/'. $field['widget']['file_path'],
+        'op' => 'move_uploaded_file',
+        'instance' => drupal_to_js(array('name' => $element['#field_name'])),
+        'widget' => drupal_to_js($field['widget']),
+      ),
+      'file_size_limit' => ($field['widget']['max_filesize_per_file'] ? $field['widget']['max_filesize_per_file'] : 0),
+      'file_types' => '*.'. str_replace(" ", ";*.", $field['widget']['file_extensions']),
+      'file_types_description' => ($element['#description'] ? $element['#description'] : ''),
+      'file_upload_limit' => $limit,
+      'custom_settings' => array(
+        'upload_stack_value' => (!empty($element['#value'])) ? drupal_to_js($element['#value']) : '[]',
+        'max_queue_size' => ($field['widget']['max_filesize_per_node'] ? $field['widget']['max_filesize_per_node'] : 0),
+      ),
+    );
+    drupal_add_js('misc/tabledrag.js');
+    drupal_add_js("$path/js/swfupload_widget.js");
+    drupal_add_js($settings, 'setting');
+  }
 
   return $element;
 }

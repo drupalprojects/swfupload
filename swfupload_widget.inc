@@ -10,8 +10,13 @@
  * Implementation of CCK's hook_widget_settings($op = 'form').
  */
 function swfupload_widget_settings_form($widget) {
-  module_load_include('inc', 'imagefield', 'imagefield_widget');
-  $form = imagefield_widget_settings_form($widget);
+  if (module_exists('imagefield')) {
+    module_load_include('inc', 'imagefield', 'imagefield_widget');
+    $form = imagefield_widget_settings_form($widget);
+  }
+  else {
+    $form = module_invoke('filefield', 'widget_settings', 'form', $widget);
+  }
   return $form;
 }
 
