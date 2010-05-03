@@ -8,6 +8,13 @@
  */
 
 /**
+ * Implementation of hook_perm().
+ */
+function swfupload_perm() {
+  return array('upload files with swfupload');
+}
+
+/**
  * Implementation of hook_menu().
  */
 function swfupload_menu() {
@@ -34,7 +41,7 @@ function swfupload_access() {
     global $user;
     $user = user_load($sid[0]);
 
-    if (!user_access('upload files')) {
+    if (!user_access('upload files with swfupload')) {
       return FALSE;
     }
 
@@ -55,7 +62,7 @@ function swfupload_access() {
     return FALSE;
   }
   // No session ID is set, we can assume we're still in the same session
-  return (($p->op) && user_access('upload files'));
+  return (($p->op) && user_access('upload files with swfupload'));
 }
 
 /**
@@ -348,7 +355,7 @@ function swfupload_swfupload(&$file, $op, &$instance, $widget) {
       // Check if the file directory exists
       file_check_directory($file->file_path, FILE_CREATE_DIRECTORY);
 
-      if (user_access('upload files') && ($file = file_save_upload($instance->name, $file->validators, $file->file_path))) {
+      if (user_access('upload files with swfupload') && ($file = file_save_upload($instance->name, $file->validators, $file->file_path))) {
         if (image_get_info($file->filepath)) {
           $file->thumb = file_create_url(swfupload_thumb_path($file, TRUE));
         }
