@@ -845,12 +845,11 @@ function SWFU(id, settings) {
       case 'string':
         return '"'+ v.replace(/\n/g, '\\n') +'"';
       case 'object':
-        var output = "{";
+        var output = '';
         for(i in v) {
-          output = output + '"' + i + '"' + ":" + ref.toJson(v[i]) + ",";
+          output += (output ? ',' : '') + '"' + i + '":' + ref.toJson(v[i]);
         }
-        output = output.substr(0, output.length - 1) + "}";
-        return (output == '}') ? 'null' : output;
+        return '{' + output + '}';
       default:
         return 'null';
     };
