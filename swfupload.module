@@ -1,5 +1,6 @@
 <?php
 // $Id$
+include_once dirname(__FILE__) . '/swfupload_widget.inc';
 
 /**
  * @file
@@ -37,12 +38,15 @@ function swfupload_upload_access() {
   // Validate the request
   if (!empty($p->sid)) {
     $sid = split("\*", hex2bin($p->sid));
-
+    
+    // Use the core methods to restore the session
     global $user;
     $user = user_load($sid[0]);
+    // This is needed. Most people forget about this - thats why forms wont work anymore ... the validation fails (token)
+    session_id($user->sid);
 
     if (!user_access('upload files with swfupload')) {
-      return FALSE;
+      return false;
     }
 
     if (!$user->uid) {
@@ -63,39 +67,6 @@ function swfupload_upload_access() {
   }
   // No session ID is set, we can assume we're still in the same session
   return (!empty($p->op) && user_access('upload files with swfupload'));
-}
-
-/**
- * Implementation of hook_widget_info().
- */
-function swfupload_widget_info() {
-  return array(
-    'swfupload_widget' => array(
-      'label' => t('SWFUpload'),
-      'field types' => array('filefield'),
-      'multiple values' => CONTENT_HANDLE_MODULE,
-      'callbacks' => array(
-        'default value' => CONTENT_CALLBACK_CUSTOM,
-      ),
-    ),
-  );
-}
-
-/**
- * Implementation of CCK's hook_widget_settings().
- *
- * Delegated to filefield.
- */
-function swfupload_widget_settings($op, $widget) {
-  module_load_include('inc', 'swfupload', 'swfupload_widget');
-  switch ($op) {
-    case 'form':
-      return swfupload_widget_settings_form($widget);
-    case 'validate':
-      return swfupload_widget_settings_validate($widget);
-    case 'save':
-      return swfupload_widget_settings_save($widget);
-  }
 }
 
 /**
@@ -138,78 +109,6 @@ function swfupload_elements() {
 }
 
 /**
- * An #element_validate callback for the filefield_widget field.
- */
-function swfupload_widget_validate(&$element, &$form_state) {
-
-  $element_value = $element['#value'];
-  if (!empty($element_value)) {
-    foreach (array_values($element_value) as $key => $file) {
-      $form_state['values'][$element['#field_name']][$key] = array(
-        'fid' => $file['fid'],
-        'list' => $file['list'],
-        'data' => array(
-          'description' => $file['description'],
-          'alt' => $file['alt'],
-          'title' => $file['title'],
-        ),
-      );
-      unset($form_state['values'][$element['#field_name']][$file['fid']]);
-    }
-    unset($form_state['values'][$element['#field_name']]['data']);
-  }
-}
-
-/**
- * The #value_callback for the swfupload_widget type element.
- */
-function swfupload_widget_value($element, $edit = FALSE) {
-  if (is_string($edit)) {
-    $edit = json_decode($edit, TRUE);
-  }
-
-  if ($edit === false) {
-    $default_value = array();
-
-    if (is_array($element['#default_value'])) {
-      foreach ($element['#default_value'] as $file) {
-        if ($file) {
-          $file += array('description' => $file['data']['description'], 'alt' => $file['data']['alt'], 'title' => $file['data']['title']);
-          unset($file['data']);
-
-          // If we're dealing with an image, create a thumbpath
-          if (image_get_info($file['filepath'])) {
-            $file['thumb'] = file_create_url(swfupload_thumb_path($file));
-          }
-          $default_value[$file['fid']] = $file;
-        }
-      }
-    }
-    return $default_value;
-  }
-  else {
-    return $edit;
-  }
-}
-
-/**
- * Process an individual element.
- *
- * Build the form element. When creating a form using FAPI #process,
- * note that $element['#value'] is already set.
- *
- * The $fields array is in $form['#field_info'][$element['#field_name']].
- */
-function swfupload_widget_process($element, $edit, $form_state, $form) {
-  if (module_exists('imagefield')) {
-    $element += imagefield_widget_process($element, $edit, $form_state, $form);
-    unset($element['#theme']);
-  }
-  $element['#default_value'] = '[]';
-  return $element;
-}
-
-/**
  * This function is called after the FAPI element is processed.
  * Here we can safely attach our javascript
  */
@@ -228,7 +127,7 @@ function swfupload_add_js($element) {
     $field['widget']['description_field'] = $field['description_field'];
   
     $limit = ($field['multiple'] == 1 ? 0 : ($field['multiple'] == 0 ? 1 : $field['multiple']));
-
+    
     // We need to store the variable $flash_url statically while the 2nd time the script is loaded,
     // $swfupload_library->scripts['2.2.0.1'] will be empty.
     static $flash_url;
@@ -247,15 +146,15 @@ function swfupload_add_js($element) {
         'sid' => _post_key(),
         'file_path' => file_directory_path() .'/'. $field['widget']['file_path'],
         'op' => 'move_uploaded_file',
-        'instance' => drupal_to_js(array('name' => $element['#field_name'])),
-        'widget' => drupal_to_js($field['widget']),
+        'instance' => swfupload_to_js(array('name' => $element['#field_name'])),
+        'widget' => swfupload_to_js($field['widget']),
       ),
-      'file_size_limit' => ($field['widget']['max_filesize_per_file'] ? $field['widget']['max_filesize_per_file'] : 0),
+      'file_size_limit' => ($field['widget']['max_filesize_per_file'] ? (parse_size($field['widget']['max_filesize_per_file']) / 1048576) .'MB' : 0),
       'file_types' => (empty($field['widget']['file_extensions']) ? '' : '*.'. str_replace(" ", ";*.", $field['widget']['file_extensions'])),
       'file_types_description' => ($element['#description'] ? $element['#description'] : ''),
       'file_upload_limit' => $limit,
       'custom_settings' => array(
-        'upload_stack_value' => (!empty($element['#value'])) ? drupal_to_js($element['#value']) : '[]',
+        'upload_stack_value' => (!empty($element['#value'])) ? swfupload_to_js($element['#value']) : '[]',
         'max_queue_size' => ($field['widget']['max_filesize_per_node'] ? $field['widget']['max_filesize_per_node'] : 0),
       ),
     );
@@ -290,9 +189,9 @@ function hex2bin($h) {
 }
 
 /**
- * Implementation of hook_swfupload().
+ * Implementation of our own API hook_swfupload().
  */
-function swfupload_swfupload(&$file, $op, &$instance, $widget) {
+function swfupload_swfupload(&$file, $op, &$instance, $widget) {  
   switch ($op) {
     case 'init':
       $columns = 0;
@@ -402,4 +301,17 @@ function swfupload_thumb_path($file, $create_thumb = FALSE) {
     swfupload_thumb($file, $filepath);
   }
   return $filepath;
+}
+
+/**
+ * Converts a PHP variable into its Javascript equivalent.
+ * This function is used instead of drupal_to_js to avoid malformed unicode encoded data when using <, > or &.
+ */
+function swfupload_to_js($var) {
+  if (function_exists('json_encode')) {
+    return str_replace(array('<', '>', '&'), array('\u003c', '\u003e', '\u0026'), json_encode($var));
+  }
+  else {
+    return str_replace(array('\x3c', '\x3e', '\x26'), array('\u003c', '\u003e', '\u0026'), drupal_to_js($var));
+  }
 }
