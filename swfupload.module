@@ -74,7 +74,7 @@ function swfupload_upload_access() {
       $user = user_load($uid);
 
       // This is needed. Most people forget about this - thats why forms wont work anymore ... the validation fails (token).
-      session_id($user->sid);
+      session_id(array_search($token, $valid_sids));
 
       // As the user session is restored, check for general rights to use swfupload
       return user_access('upload files with swfupload');
@@ -149,7 +149,7 @@ function swfupload_add_js($element) {
     $field['widget']['description_field'] = $field['description_field'];
   
     $limit = ($field['multiple'] == 1 ? 0 : ($field['multiple'] == 0 ? 1 : $field['multiple']));
-    
+
     // We need to store the variable $flash_url statically while the 2nd time the script is loaded,
     // $swfupload_library->scripts['2.2.0.1'] will be empty.
     static $flash_url;
@@ -213,7 +213,7 @@ function hex2bin($h) {
 /**
  * Implementation of our own API hook_swfupload().
  */
-function swfupload_swfupload(&$file, $op, &$instance, $widget) {  
+function swfupload_swfupload(&$file, $op, &$instance, $widget) {
   switch ($op) {
     case 'init':
       $columns = 0;
