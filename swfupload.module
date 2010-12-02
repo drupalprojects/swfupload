@@ -59,7 +59,7 @@ function swfupload_upload_access() {
     $valid_sids = array();
     // create our hashes we need for verification
     while ($row = db_fetch_object($result)) {
-      $valid_sids[] = md5($row->sid);
+      $valid_sids[$row->sid] = md5($row->sid);
     }
     
     // If the hashed session is is present in the stored hashed session ids from the database,
@@ -193,7 +193,7 @@ function swfupload_add_js($element) {
  */
 function _post_key() {
   global $user;
-  return bin2hex("$user->uid*". md5(($user->uid ? $user->sid : $_SERVER['REMOTE_ADDR'])));
+  return bin2hex("$user->uid*". md5(($user->uid && $user->sid) ? $user->sid : $_SERVER['REMOTE_ADDR']));
 }
 
 /**
