@@ -285,12 +285,25 @@ function swfupload_swfupload(&$file, $op, &$instance, $widget) {
 
       if (user_access('upload files with swfupload') && ($file = file_save_upload($instance->name, $file->validators, $file->file_path))) {
         if (image_get_info($file->filepath)) {
-          $file->thumb = file_create_url(swfupload_thumb_path($file, TRUE));
+          $file->thumb = file_create_url(drupal_urlencode(swfupload_thumb_path($file, TRUE)));
         }
         break;
       }
       drupal_set_message(t('There was an error uploading the file'), 'swfupload_error');
       break;
+  }
+}
+
+/**
+ * Implements hook_filefield_paths_process_file().
+ *
+ * Since we have our own widget, the implementation of this hook for
+ * ImageField (which is provided by FileField Paths) won't do.
+ */
+function swfupload_filefield_paths_process_file($new, $file, $settings, $node, $update) {
+  if ($new && isset($file['widget']) && $file['widget'] == 'swfupload' && file_exists($thumbnail_source = swfupload_thumb_path(array('filepath' => $file['filepath']['old'])))) {
+    // Delete old thumbnail.
+    file_delete($thumbnail_source);
   }
 }
 
@@ -316,7 +329,6 @@ function swfupload_thumb_path($file, $create_thumb = FALSE) {
   $file = (object) $file;
   $short_path = preg_replace('/^' . preg_quote(file_directory_path(), '/') . '/', '', $file->filepath);
   $filepath = file_directory_path() . '/imagefield_thumbs' . $short_path;
-  $filepath = drupal_substr($filepath, 0, (strrpos($filepath, '/') + 1)) . rawurlencode(drupal_substr($filepath, (strrpos($filepath, '/') + 1)));
 
   if ($create_thumb) {
     module_load_include('inc', 'swfupload', 'swfupload.admin');

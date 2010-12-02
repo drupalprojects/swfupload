@@ -47,14 +47,16 @@ function swfupload_widget_validate(&$element, &$form_state) {
   $element_value = $element['#value'];
   if (!empty($element_value)) {
     foreach (array_values($element_value) as $key => $file) {
-      $form_state['values'][$element['#field_name']][$key] = array(
-        'fid' => $file['fid'],
-        'list' => $file['list'],
-        'data' => array(
-          'description' => $file['description'],
-          'alt' => $file['alt'],
-          'title' => $file['title'],
-        ),
+      $form_state['values'][$element['#field_name']][$key] = array_merge(
+        field_file_load($file['fid']), // Load all fields, such as 'filepath'.
+        array(
+          'list' => $file['list'],
+          'data' => array(
+            'description' => $file['description'],
+            'alt' => $file['alt'],
+            'title' => $file['title'],
+          ),
+        )
       );
       unset($form_state['values'][$element['#field_name']][$file['fid']]);
     }
@@ -88,7 +90,7 @@ function swfupload_widget_value($element, $edit = FALSE) {
 
           // If we're dealing with an image, create a thumbpath
           if (image_get_info($file['filepath'])) {
-            $file['thumb'] = file_create_url(swfupload_thumb_path($file));
+            $file['thumb'] = file_create_url(drupal_urlencode(swfupload_thumb_path($file)));
           }
           $default_value[$file['fid']] = $file;
         }
@@ -114,6 +116,19 @@ function swfupload_widget_process($element, $edit, $form_state, $form) {
     $element += imagefield_widget_process($element, $edit, $form_state, $form);
     unset($element['#theme']);
   }
+  
+  // Make sure that the thumbnails exist. $element['#value'] is
+  // structured differently in our widget, so this is not handled by
+  // imagefield_widget_process().
+  if (is_array($element['#value'])) {
+    foreach (element_children($element['#value']) as $key) {
+      if (isset($element['#value'][$key]['filepath'])) {
+        $file = $element['#value'][$key];
+        swfupload_thumb_path($file, TRUE);
+      }
+    }
+  }
+
   $element['#default_value'] = '[]';
   return $element;
 }
