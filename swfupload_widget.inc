@@ -82,7 +82,7 @@ function swfupload_widget_value($element, $edit = FALSE) {
           // that means some fields are simply missing (filepath etc.). We need to properly restore it here 
           $file = field_file_load($tmp_file['fid']);
           $file += array(
-            'description' => $tmp_file['data']['description'],
+            'description' => $tmp_file['data']['description'] ? $tmp_file['data']['description'] : '',
             'alt' => $tmp_file['data']['alt'],
             'title' => $tmp_file['data']['title'],
             'list' => $tmp_file['list'],
