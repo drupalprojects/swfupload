@@ -219,7 +219,7 @@ function swfupload_swfupload(&$file, $op, &$instance, $widget) {
       $columns = 0;
       if ($widget->description_field) {
         $instance->elements['description'] = $instance->elements['filename'];
-        $instance->elements['description']['type'] = 'textarea';
+        $instance->elements['description']['type'] = 'textfield';
         $instance->elements['drag']['title'] = t('Description');
         unset($instance->elements['filename']);
       }
