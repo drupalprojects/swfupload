@@ -42,6 +42,8 @@ INSTALLATION:
 8. Enable this module by navigating to:
      admin/build/modules
 
+9. Ensure the library is available by visiting:
+     admin/build/jqp/swfupload/
 
 USAGE:
 --------------------------------------------------------------------------------
@@ -49,6 +51,11 @@ Create a new file field in through CCK's interface. Visit Administer -> Content
 management -> Content types (admin/content/types), then click Manage fields on
 the type you want to add an SWFUpload field. Select "File" as the field type and
 "SWFUpload" as the widget type to create a new field.
+
+On the field configuration screen set the "Permitted upload file extensions"
+to include the image types you will allow users to upload.
+
+Grant the permission to "upload files with swfupload" to the appropriate roles.
 
 API:
 --------------------------------------------------------------------------------
