@@ -1,4 +1,3 @@
-; $Id$
 name = SWFupload Widget
 description = A widget for CCK's Filefield which enables multiple file uploads using the SWFUpload library.
 package = CCK
