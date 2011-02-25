@@ -1,5 +1,4 @@
 <?php
-// $Id$
 
 /**
  * Install hook for the SWFUpload module to change the module's height
