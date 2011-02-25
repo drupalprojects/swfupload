@@ -1,4 +1,3 @@
-// $Id$
 function swfupload_fileQueued(file, queuelength) {
 	var listingfiles = document.getElementById("SWFUploadFileListingFiles");
 

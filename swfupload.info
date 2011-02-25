@@ -1,4 +1,3 @@
-; $Id$
 name = SWFUpload
 description = "Expands the functionality of the upload module through implementation of SWFUpload."
 dependencies = upload
