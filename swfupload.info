@@ -1,7 +1,8 @@
-name = SWFupload
-description = Attach files in your node with this SWFupload module
-package = Other
+; $Id:$
+name = SWFupload Widget
+description = A widget for file field which enables multiple file uploads using the SWFUpload library.
+package = Fields
 version = VERSION
-dependencies[] = upload
-dependencies[] = jquery_plugin
-core = 6.x
+dependencies[] = file
+dependencies[] = libraries
+core = 7.x
