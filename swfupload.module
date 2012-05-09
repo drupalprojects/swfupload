@@ -201,7 +201,7 @@ function swfupload_swfupload(&$file, $op, &$instance, $instance_settings) {
       file_prepare_directory($file->file_path, FILE_CREATE_DIRECTORY);
 
       if (user_access('upload files with swfupload') && ($file = file_save_upload($instance->name, $file->validators, $file->file_path))) {
-        if (image_get_info($file->filepath)) {
+        if (image_get_info($file->uri)) {
           $file->thumb = swfupload_thumb($file);
         }
         break;
@@ -279,5 +279,7 @@ function _swfupload_hex2bin($h) {
  * Create a thumbnail to be shown in the swfupload table.
  */
 function swfupload_thumb($file) {
-  return image_style_url('thumbnail', $file['uri']);
+  // Force an object.
+  $file = (object) $file;
+  return image_style_url('thumbnail', $file->uri);
 }
